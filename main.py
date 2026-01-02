@@ -68,7 +68,37 @@ if Vid:
     Audio = extractAudio(Vid, audio_file)
     if Audio:
 
-        transcriptions = transcribeAudio(Audio)
+        # transcriptions = transcribeAudio(Audio)
+        
+        # Load subtitles from text.md instead of transcription
+        def get_subtitles_from_md(file_path):
+            if not os.path.exists(file_path):
+                return []
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+            
+            subs = []
+            current_time = 0
+            duration_per_seg = 10.0
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Remove markdown bolding ** and numbering (e.g., "1. ")
+                clean_text = re.sub(r'^\d+\.\s*', '', line)
+                clean_text = clean_text.replace('**', '')
+                
+                if clean_text:
+                    subs.append([clean_text, current_time, current_time + duration_per_seg])
+                    current_time += duration_per_seg
+            
+            return subs
+
+        transcriptions = get_subtitles_from_md("text.md")
+        
         if len(transcriptions) > 0:
             print(f"\n{'='*60}")
             print(f"TRANSCRIPTION SUMMARY: {len(transcriptions)} segments")
@@ -146,8 +176,8 @@ if Vid:
                 print("Auto-approved (batch mode)\n")
             
             print(f"\n✓ Final highlight: {start}s - {stop}s")
-            #handle the case when the highlight starts from 0s
-            if start>0 and stop>0 and stop>start:
+            # handle the case when the highlight starts from 0s
+            if start is not None and stop is not None and stop > start and start >= 0:
                 print(f"\nCreating short video: {start}s - {stop}s ({stop-start}s duration)")
                 print(f"Start: {start} , End: {stop}")
 
@@ -158,7 +188,14 @@ if Vid:
                 crop_to_vertical(temp_clip, temp_cropped)
                 
                 print("Step 3/4: Adding subtitles to video...")
-                add_subtitles_to_video(temp_cropped, temp_subtitled, transcriptions, video_start_time=start)
+                add_subtitles_to_video(
+                    temp_cropped, 
+                    temp_subtitled, 
+                    transcriptions, 
+                    video_start_time=start,
+                    original_title=video_title,
+                    original_url=url_or_file if "youtube.com" in url_or_file or "youtu.be" in url_or_file else None
+                )
                 
                 # Generate final output filename with random identifier
                 clean_title = clean_filename(video_title) if video_title else "output"
@@ -166,8 +203,31 @@ if Vid:
                 
                 print("Step 4/4: Adding audio to final video...")
                 combine_videos(temp_clip, temp_subtitled, final_output)
+                
+                # Move files to out directory and cleanup
+                out_dir = "out"
+                if not os.path.exists(out_dir):
+                    os.makedirs(out_dir)
+                
+                final_path = os.path.join(out_dir, final_output)
+                os.rename(final_output, final_path)
+                
+                # Move text.md to out directory (with session ID to avoid overwrite)
+                if os.path.exists("text.md"):
+                    text_out_name = f"{clean_title}_{session_id}.md"
+                    os.rename("text.md", os.path.join(out_dir, text_out_name))
+                    print(f"Moved text.md to {out_dir}/{text_out_name}")
+
+                # Delete original video
+                if os.path.exists(Vid):
+                    try:
+                        os.remove(Vid)
+                        print(f"Deleted original video: {Vid}")
+                    except Exception as e:
+                        print(f"Warning: Could not delete original video: {e}")
+
                 print(f"\n{'='*60}")
-                print(f"✓ SUCCESS: {final_output} is ready!")
+                print(f"✓ SUCCESS: {final_path} is ready!")
                 print(f"{'='*60}\n")
                 
                 # Clean up temporary files

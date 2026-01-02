@@ -4,10 +4,11 @@ import os
 
 load_dotenv()
 
-api_key = os.getenv("OPENAI_API")
+openai_api_key = os.getenv("OPENAI_API")
+google_api_key = os.getenv("GOOGLE_API_KEY")
 
-if not api_key:
-    raise ValueError("API key not found. Make sure it is defined in the .env file.")
+if not openai_api_key and not google_api_key:
+    raise ValueError("API key not found. Make sure OPENAI_API or GOOGLE_API_KEY is defined in the .env file.")
 
 class JSONResponse(BaseModel):
     """
@@ -53,11 +54,24 @@ def GetHighlight(Transcription):
     from langchain_openai import ChatOpenAI
     
     try:
-        llm = ChatOpenAI(
-            model="gpt-5-nano",  # Much cheaper than gpt-4o
-            temperature=1.0,
-            api_key = api_key
-        )
+        if google_api_key:
+            # Gemini 3 Pro Preview를 사용합니다
+            model_name = "gemini-3-pro-preview"
+            print(f"Using Google Gemini Pro ({model_name}) via OpenAI-compatible endpoint...")
+            llm = ChatOpenAI(
+                model=model_name,
+                temperature=1.0,
+                api_key=google_api_key,
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+            )
+        else:
+            model_name = "gpt-4o-mini"
+            print(f"Using OpenAI ({model_name})...")
+            llm = ChatOpenAI(
+                model=model_name,
+                temperature=1.0,
+                api_key=openai_api_key
+            )
 
         from langchain.prompts import ChatPromptTemplate
         prompt = ChatPromptTemplate.from_messages(
@@ -127,4 +141,5 @@ def GetHighlight(Transcription):
         return None, None
 
 if __name__ == "__main__":
-    print(GetHighlight(User))
+    # print(GetHighlight(User))
+    pass

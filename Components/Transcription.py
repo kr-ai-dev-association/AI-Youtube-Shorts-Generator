@@ -6,9 +6,10 @@ def transcribeAudio(audio_path):
         print("Transcribing audio...")
         Device = "cuda" if torch.cuda.is_available() else "cpu"
         print(Device)
-        model = WhisperModel("base.en", device="cuda" if torch.cuda.is_available() else "cpu")
+        model = WhisperModel("base", device="cuda" if torch.cuda.is_available() else "cpu")
         print("Model loaded")
-        segments, info = model.transcribe(audio=audio_path, beam_size=5, language="en", max_new_tokens=128, condition_on_previous_text=False)
+        # language=None으로 설정하면 자동으로 언어를 감지합니다.
+        segments, info = model.transcribe(audio=audio_path, beam_size=5, language=None, condition_on_previous_text=False)
         segments = list(segments)
         # print(segments)
         extracted_texts = [[segment.text, segment.start, segment.end] for segment in segments]

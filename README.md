@@ -63,7 +63,11 @@ AI-powered tool to automatically generate engaging YouTube Shorts from long-form
    
    Create a `.env` file in the project root:
    ```bash
+   # OpenAI를 사용할 경우
    OPENAI_API=your_openai_api_key_here
+   
+   # Gemini를 사용할 경우
+   GOOGLE_API_KEY=your_google_api_key_here
    ```
 
 ## Usage
