@@ -212,12 +212,6 @@ if Vid:
                 final_path = os.path.join(out_dir, final_output)
                 os.rename(final_output, final_path)
                 
-                # Move text.md to out directory (with session ID to avoid overwrite)
-                if os.path.exists("text.md"):
-                    text_out_name = f"{clean_title}_{session_id}.md"
-                    os.rename("text.md", os.path.join(out_dir, text_out_name))
-                    print(f"Moved text.md to {out_dir}/{text_out_name}")
-
                 # Delete original video
                 if os.path.exists(Vid):
                     try:
