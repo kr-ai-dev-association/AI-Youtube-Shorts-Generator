@@ -52,9 +52,9 @@ def add_subtitles_to_video(input_video, output_video, transcriptions, video_star
     # Create text clips for each transcription segment
     text_clips = []
     
-    # Scale font size proportionally to video height (~6.5% of height)
-    # 1080p → 70px, 720p → 47px
-    dynamic_fontsize = int(video.h * 0.065)
+    # Scale font size proportionally to video height (~3.25% of height)
+    # 1080p → 35px, 720p → 23px
+    dynamic_fontsize = int(video.h * 0.0325)
     
     for text, start, end in relevant_transcriptions:
         # Clean up text
