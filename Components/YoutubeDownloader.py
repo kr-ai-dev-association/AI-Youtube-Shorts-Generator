@@ -20,12 +20,22 @@ def download_youtube_video(url):
             stream_type = "Progressive" if stream.is_progressive else "Adaptive"
             print(f"  {i}. Resolution: {stream.resolution}, Size: {size:.2f} MB, Type: {stream_type}")
         
+        # Find 720p stream as default, otherwise highest
+        default_stream = None
+        for stream in video_streams:
+            if stream.resolution == '720p':
+                default_stream = stream
+                break
+        
+        if default_stream is None:
+            default_stream = video_streams[0]
+
         # Interactive selection with timeout
         import select
         import sys
         
-        print("\nSelect resolution number (0-4) or wait 5s for auto-select...")
-        print("Auto-selecting highest quality in 5 seconds...")
+        print(f"\nSelect resolution number (0-4) or wait 5s for auto-select...")
+        print(f"Auto-selecting {default_stream.resolution} in 5 seconds...")
         
         selected_stream = None
         try:
@@ -38,17 +48,17 @@ def download_youtube_video(url):
                         selected_stream = video_streams[choice]
                         print(f"✓ User selected: {selected_stream.resolution}")
                     else:
-                        print("Invalid choice, using highest quality")
-                        selected_stream = video_streams[0]
+                        print(f"Invalid choice, using {default_stream.resolution}")
+                        selected_stream = default_stream
                 else:
-                    print("Invalid input, using highest quality")
-                    selected_stream = video_streams[0]
+                    print(f"Invalid input, using {default_stream.resolution}")
+                    selected_stream = default_stream
             else:
-                print("\nTimeout - auto-selecting highest quality")
-                selected_stream = video_streams[0]
+                print(f"\nTimeout - auto-selecting {default_stream.resolution}")
+                selected_stream = default_stream
         except:
-            print("\nAuto-selecting highest quality (timeout not available on this platform)")
-            selected_stream = video_streams[0]
+            print(f"\nAuto-selecting {default_stream.resolution} (timeout not available on this platform)")
+            selected_stream = default_stream
         
         # Confirm selection
         if selected_stream is None:
