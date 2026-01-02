@@ -20,14 +20,14 @@ def add_subtitles_to_video(input_video, output_video, transcriptions, video_star
             
         footer_clip = TextClip(
             footer_text.strip(),
-            fontsize=20,
+            fontsize=10,  # Reduced from 20 to 10
             color='white',
             stroke_color='black',
             stroke_width=0.5,
             font='AppleGothic',
             method='caption',
             size=(video.w - 40, None)
-        ).set_position(('center', video.h - 60)).set_start(0).set_duration(video_duration).set_opacity(0.7)
+        ).set_position(('center', video.h - 100)).set_start(0).set_duration(video_duration).set_opacity(0.7)
         footer_clips.append(footer_clip)
 
     # Filter transcriptions to only those within the video timeframe
@@ -66,7 +66,7 @@ def add_subtitles_to_video(input_video, output_video, transcriptions, video_star
         txt_clip = TextClip(
             text,
             fontsize=dynamic_fontsize,
-            color='#2699ff',
+            color='white',  # Changed from #2699ff to white
             stroke_color='black',
             stroke_width=2,
             font='AppleGothic',  # macOS standard font that supports Korean
