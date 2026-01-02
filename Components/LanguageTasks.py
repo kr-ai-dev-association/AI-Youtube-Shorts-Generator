@@ -4,7 +4,8 @@ import os
 
 load_dotenv()
 
-google_api_key = os.getenv("OPENAI_API")
+openai_api_key = os.getenv("OPENAI_API")
+google_api_key = os.getenv("GOOGLE_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 if not openai_api_key and not google_api_key and not gemini_api_key:
@@ -145,22 +146,27 @@ def GetYoutubeMetadata(text_content):
     text.md의 내용을 바탕으로 유튜브 업로드에 필요한 제목, 설명, 태그를 생성합니다.
     """
     from langchain_openai import ChatOpenAI
+    from langchain.prompts import ChatPromptTemplate
+    from pydantic import BaseModel, Field
+    from typing import List
+
+    class YoutubeMetadata(BaseModel):
+        title: str = Field(description="Catchy title for YouTube Shorts")
+        description: str = Field(description="Video description")
+        tags: List[str] = Field(description="List of relevant tags")
     
     metadata_system = """
-    Based on the provided script content, generate YouTube Shorts metadata in JSON format.
-    The response must strictly follow this structure:
-    {
-        "title": "Short catchy title (max 100 chars, include #Shorts)",
-        "description": "Engaging description including relevant hashtags",
-        "tags": ["tag1", "tag2", "tag3"]
-    }
+    Based on the provided script content, generate YouTube Shorts metadata.
+    The response must follow this structure:
+    - title: Short catchy title (max 100 chars, include #Shorts)
+    - description: Engaging description including relevant hashtags
+    - tags: List of relevant tags
     """
     
     try:
-        # GEMINI_API_KEY가 있으면 flash 모델 사용 (사용자 요청)
         if os.getenv("GEMINI_API_KEY"):
             model_name = "gemini-3-flash-preview"
-            print(f"Using Google Gemini Flash ({model_name}) for metadata...")
+            print(f"Generating YouTube metadata using {model_name}...")
             llm = ChatOpenAI(
                 model=model_name,
                 temperature=0.7,
@@ -171,22 +177,13 @@ def GetYoutubeMetadata(text_content):
             model_name = "gpt-4o-mini"
             llm = ChatOpenAI(model=model_name, api_key=os.getenv("OPENAI_API"))
 
-        from langchain.prompts import ChatPromptTemplate
-        from pydantic import BaseModel, Field
-        from typing import List
-
-        class YoutubeMetadata(BaseModel):
-            title: str = Field(description="Catchy title for YouTube Shorts")
-            description: str = Field(description="Video description")
-            tags: List[str] = Field(description="List of relevant tags")
-
         prompt = ChatPromptTemplate.from_messages([
             ("system", metadata_system),
-            ("user", f"Content:\n{text_content}")
+            ("user", "Script Content:\n{text_content}")
         ])
         
         chain = prompt | llm.with_structured_output(YoutubeMetadata)
-        metadata = chain.invoke({})
+        metadata = chain.invoke({"text_content": text_content})
         return metadata.title, metadata.description, metadata.tags
     except Exception as e:
         print(f"Error generating metadata: {e}")
