@@ -4,11 +4,11 @@ import os
 
 load_dotenv()
 
-openai_api_key = os.getenv("OPENAI_API")
-google_api_key = os.getenv("GOOGLE_API_KEY")
+google_api_key = os.getenv("OPENAI_API")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
-if not openai_api_key and not google_api_key:
-    raise ValueError("API key not found. Make sure OPENAI_API or GOOGLE_API_KEY is defined in the .env file.")
+if not openai_api_key and not google_api_key and not gemini_api_key:
+    raise ValueError("API key not found. Make sure OPENAI_API, GOOGLE_API_KEY, or GEMINI_API_KEY is defined in the .env file.")
 
 class JSONResponse(BaseModel):
     """
@@ -139,6 +139,58 @@ def GetHighlight(Transcription):
         import traceback
         traceback.print_exc()
         return None, None
+
+def GetYoutubeMetadata(text_content):
+    """
+    text.md의 내용을 바탕으로 유튜브 업로드에 필요한 제목, 설명, 태그를 생성합니다.
+    """
+    from langchain_openai import ChatOpenAI
+    
+    metadata_system = """
+    Based on the provided script content, generate YouTube Shorts metadata in JSON format.
+    The response must strictly follow this structure:
+    {
+        "title": "Short catchy title (max 100 chars, include #Shorts)",
+        "description": "Engaging description including relevant hashtags",
+        "tags": ["tag1", "tag2", "tag3"]
+    }
+    """
+    
+    try:
+        # GEMINI_API_KEY가 있으면 flash 모델 사용 (사용자 요청)
+        if os.getenv("GEMINI_API_KEY"):
+            model_name = "gemini-3-flash-preview"
+            print(f"Using Google Gemini Flash ({model_name}) for metadata...")
+            llm = ChatOpenAI(
+                model=model_name,
+                temperature=0.7,
+                api_key=os.getenv("GEMINI_API_KEY"),
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+            )
+        else:
+            model_name = "gpt-4o-mini"
+            llm = ChatOpenAI(model=model_name, api_key=os.getenv("OPENAI_API"))
+
+        from langchain.prompts import ChatPromptTemplate
+        from pydantic import BaseModel, Field
+        from typing import List
+
+        class YoutubeMetadata(BaseModel):
+            title: str = Field(description="Catchy title for YouTube Shorts")
+            description: str = Field(description="Video description")
+            tags: List[str] = Field(description="List of relevant tags")
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", metadata_system),
+            ("user", f"Content:\n{text_content}")
+        ])
+        
+        chain = prompt | llm.with_structured_output(YoutubeMetadata)
+        metadata = chain.invoke({})
+        return metadata.title, metadata.description, metadata.tags
+    except Exception as e:
+        print(f"Error generating metadata: {e}")
+        return "New YouTube Short #Shorts", "Uploaded via AI YouTube Shorts Generator", ["Shorts", "AI"]
 
 if __name__ == "__main__":
     # print(GetHighlight(User))

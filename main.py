@@ -4,6 +4,8 @@ from Components.Transcription import transcribeAudio
 from Components.LanguageTasks import GetHighlight
 from Components.FaceCrop import crop_to_vertical, combine_videos
 from Components.Subtitles import add_subtitles_to_video
+from Components.YoutubeUploader import upload_to_youtube
+from Components.LanguageTasks import GetHighlight, GetYoutubeMetadata
 import sys
 import os
 import uuid
@@ -223,6 +225,24 @@ if Vid:
                 print(f"\n{'='*60}")
                 print(f"✓ SUCCESS: {final_path} is ready!")
                 print(f"{'='*60}\n")
+
+                # Step 5/5: Upload to YouTube
+                upload_confirm = input("Do you want to upload this video to YouTube? (y/n): ").lower()
+                if upload_confirm == 'y':
+                    print("Generating YouTube metadata...")
+                    # Get full text content from transcriptions for metadata generation
+                    full_text = "\n".join([t[0] for t in transcriptions])
+                    yt_title, yt_desc, yt_tags = GetYoutubeMetadata(full_text)
+                    
+                    print(f"\nUPLOADING TO YOUTUBE:")
+                    print(f"Title: {yt_title}")
+                    print(f"Description: {yt_desc}")
+                    print(f"Tags: {', '.join(yt_tags)}")
+                    
+                    try:
+                        upload_to_youtube(final_path, yt_title, yt_desc, yt_tags)
+                    except Exception as e:
+                        print(f"YouTube Upload Failed: {e}")
                 
                 # Clean up temporary files
                 try:
